@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ucla: #536895;
+  --color-ucla-dark: #41547D;
+  --color-ucla-light: #7185AF;
+  --color-pearl: #DBD6BE;
+  --color-beige: #F2EFE4;
+  --color-canvas: #FAF9F5;
+  --color-ink: #181A1F;
+  --color-ink-muted: #5A606B;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: #FFFFFF;
+    color: #181A1F;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom sleek scrollbars for studio panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(83, 104, 149, 0.22);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(83, 104, 149, 0.4);
+}

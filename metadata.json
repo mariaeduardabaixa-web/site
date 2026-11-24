@@ -1,0 +1,8 @@
+{
+  "name": "Inside Ecobag",
+  "description": "E-commerce e estúdio 3D de personalização de ecobags da Inside Ecobag. Escolha o tamanho, crie em 3D e finalize seu pedido.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
