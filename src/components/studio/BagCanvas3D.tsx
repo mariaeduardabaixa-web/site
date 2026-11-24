@@ -386,9 +386,16 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
       );
 
       const provider = new ProceduralCottonEcobagProvider(cottonTextures);
+      const bagContainer = new THREE.Group();
+      bagContainer.name = 'active_ecobag_slot';
+      scene.add(bagContainer);
+
       let modelHandles: EcobagModelHandles | null = null;
       let currentSize = '';
       let bottonsKey = '';
+      let buildGeneration = 0;
+      let pendingSize: BagConfiguration['size'] | null = null;
+      let activeBuildPromise: Promise<void> | null = null;
 
       const syncBottons = () => {
         if (!modelHandles) return;
@@ -461,30 +468,58 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
         requestRender();
       };
 
-      const rebuildForSize = async (size: BagConfiguration['size']) => {
-        if (currentSize === size && modelHandles) return;
-        currentSize = size;
-        bottonsKey = '';
-
+      const clearActiveBag = () => {
         if (modelHandles) {
-          scene.remove(modelHandles.root);
+          bagContainer.remove(modelHandles.root);
           modelHandles.dispose();
           modelHandles = null;
         }
-
-        const handles = await provider.build(size);
-        if (isDisposed) {
-          handles.dispose();
-          return;
+        while (bagContainer.children.length > 0) {
+          const stray = bagContainer.children[0];
+          bagContainer.remove(stray);
         }
-        modelHandles = handles;
-        scene.add(handles.root);
+      };
 
-        const dim = SIZE_TO_WORLD_DIMENSIONS[size];
-        const totalH = dim.height + dim.handleDrop;
-        shadowDisc.scale.set(dim.width / 3.7, dim.depth / 0.96, 1);
-        controls.target.set(0, totalH * 0.48, 0);
-        syncVisuals();
+      const rebuildForSize = async (size: BagConfiguration['size']) => {
+        if (currentSize === size && modelHandles && !activeBuildPromise) return;
+        if (pendingSize === size && activeBuildPromise) {
+          return activeBuildPromise;
+        }
+
+        const myGen = ++buildGeneration;
+        pendingSize = size;
+        currentSize = size;
+        bottonsKey = '';
+
+        clearActiveBag();
+
+        const buildTask = (async () => {
+          const handles = await provider.build(size);
+          if (isDisposed || myGen !== buildGeneration) {
+            handles.dispose();
+            return;
+          }
+
+          clearActiveBag();
+          modelHandles = handles;
+          bagContainer.add(handles.root);
+
+          const dim = SIZE_TO_WORLD_DIMENSIONS[size];
+          const totalH = dim.height + dim.handleDrop;
+          shadowDisc.scale.set(dim.width / 3.7, dim.depth / 0.96, 1);
+          controls.target.set(0, totalH * 0.48, 0);
+          syncVisuals();
+        })();
+
+        activeBuildPromise = buildTask;
+        try {
+          await buildTask;
+        } finally {
+          if (activeBuildPromise === buildTask) {
+            activeBuildPromise = null;
+            pendingSize = null;
+          }
+        }
       };
 
       const setPreset = (preset: CameraPreset, immediate = false) => {
@@ -956,7 +991,9 @@ export const BagCanvas3D = forwardRef<BagCanvas3DHandle, BagCanvas3DProps>(
           handleContextRestored
         );
         controls.dispose();
-        modelHandles?.dispose();
+        buildGeneration++;
+        clearActiveBag();
+        scene.remove(bagContainer);
         compositor.dispose();
         cottonTextures.dispose();
         shadowDiscGeo.dispose();

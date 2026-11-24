@@ -993,6 +993,14 @@ export class ProceduralCottonEcobagProvider implements IEcobagModelProvider {
         }
       },
       dispose: () => {
+        bottonsContainer.traverse((obj) => {
+          if ((obj as THREE.Mesh).isMesh) {
+            const m = obj as THREE.Mesh;
+            m.geometry.dispose();
+            if (Array.isArray(m.material)) m.material.forEach((mt) => mt.dispose());
+            else m.material.dispose();
+          }
+        });
         [
           frontGeo,
           backGeo,
